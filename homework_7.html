@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Strategia della Rottura Temporale</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    .canvas-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 30px;
+    }
+    canvas {
+      border: 1px solid black;
+    }
+    .controls {
+      text-align: left;
+      margin: 20px auto;
+      max-width: 600px;
+    }
+    input[type="number"] {
+      width: 60px;
+      margin: 5px;
+    }
+    h1, h3 {
+      color: #004080;
+    }
+  </style>
+</head>
+<body>
+  <h1>Strategia della Rottura Temporale</h1>
+  <p>Analizza e modifica i payoff delle opzioni per ciascun esempio.</p>
+
+  <div class="canvas-container">
+    <div>
+      <h3>Esempio 1: Fine del Trimestre</h3>
+      <canvas id="example1Canvas" width="600" height="400"></canvas>
+      <div class="controls">
+        Strike Call: <input type="number" id="strikeCall1" value="100">
+        Premium Call: <input type="number" id="premiumCall1" value="10"><br>
+        Strike Put: <input type="number" id="strikePut1" value="80">
+        Premium Put: <input type="number" id="premiumPut1" value="5"><br>
+        Prezzo Corrente (S): <input type="number" id="currentPrice1" value="110"><br>
+        <button onclick="updateChart(1)">Aggiorna Grafico</button>
+      </div>
+    </div>
+
+    <div>
+      <h3>Esempio 2: Elezioni Politiche</h3>
+      <canvas id="example2Canvas" width="600" height="400"></canvas>
+      <div class="controls">
+        Strike Call: <input type="number" id="strikeCall2" value="40">
+        Premium Call: <input type="number" id="premiumCall2" value="5"><br>
+        Strike Put: <input type="number" id="strikePut2" value="25">
+        Premium Put: <input type="number" id="premiumPut2" value="2"><br>
+        Prezzo Corrente (S): <input type="number" id="currentPrice2" value="50"><br>
+        <button onclick="updateChart(2)">Aggiorna Grafico</button>
+      </div>
+    </div>
+
+    <div>
+      <h3>Esempio 3: Annuncio Trimestrale</h3>
+      <canvas id="example3Canvas" width="600" height="400"></canvas>
+      <div class="controls">
+        Strike Call: <input type="number" id="strikeCall3" value="200">
+        Premium Call: <input type="number" id="premiumCall3" value="20"><br>
+        Strike Put: <input type="number" id="strikePut3" value="160">
+        Premium Put: <input type="number" id="premiumPut3" value="15"><br>
+        Prezzo Corrente (S): <input type="number" id="currentPrice3" value="220"><br>
+        <button onclick="updateChart(3)">Aggiorna Grafico</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function drawPayoff(canvas, strikeCall, strikePut, premiumCall, premiumPut, currentPrice) {
+      const ctx = canvas.getContext("2d");
+      const width = canvas.width;
+      const height = canvas.height;
+
+      // Pulizia del canvas
+      ctx.clearRect(0, 0, width, height);
+
+      // Calcolo dinamico degli assi
+      const Smin = Math.min(strikePut - 20, strikeCall - 20);
+      const Smax = Math.max(strikePut + 20, strikeCall + 20);
+      const payoffMax = Math.max(strikeCall, strikePut) * 0.5;
+      const payoffMin = -Math.max(premiumCall, premiumPut) * 3;
+
+      const originX = 50;
+      const originY = height - 50;
+
+      // Disegno degli assi
+      ctx.beginPath();
+      ctx.moveTo(originX, 0);
+      ctx.lineTo(originX, height);
+      ctx.moveTo(0, originY);
+      ctx.lineTo(width, originY);
+      ctx.strokeStyle = "black";
+      ctx.stroke();
+
+      // Disegno dell'asse zero (tratteggiato)
+      const zeroY = originY - ((0 - payoffMin) / (payoffMax - payoffMin)) * (originY - 50);
+      ctx.beginPath();
+      ctx.setLineDash([5, 5]); // Linea tratteggiata
+      ctx.moveTo(0, zeroY);
+      ctx.lineTo(width, zeroY);
+      ctx.strokeStyle = "gray";
+      ctx.stroke();
+      ctx.setLineDash([]); // Ripristino linea normale
+
+      // Etichette sugli assi
+      ctx.font = "12px Arial";
+      const xStep = (Smax - Smin) / 5;
+      for (let S = Smin; S <= Smax; S += xStep) {
+        const x = originX + ((S - Smin) / (Smax - Smin)) * (width - originX);
+        ctx.fillText(S.toFixed(0), x - 10, originY + 20);
+      }
+      const yStep = (payoffMax - payoffMin) / 5;
+      for (let payoff = payoffMin; payoff <= payoffMax; payoff += yStep) {
+        const y = originY - ((payoff - payoffMin) / (payoffMax - payoffMin)) * (originY - 50);
+        ctx.fillText(payoff.toFixed(0), originX - 40, y + 5);
+      }
+
+      // Disegno payoff Call
+      ctx.beginPath();
+      ctx.strokeStyle = "blue";
+      for (let S = Smin; S <= Smax; S++) {
+        const x = originX + ((S - Smin) / (Smax - Smin)) * (width - originX);
+        const payoffCall = Math.max(S - strikeCall, 0) - premiumCall;
+        const y = originY - ((payoffCall - payoffMin) / (payoffMax - payoffMin)) * (originY - 50);
+        if (S === Smin) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Disegno payoff Put
+      ctx.beginPath();
+      ctx.strokeStyle = "green";
+      for (let S = Smin; S <= Smax; S++) {
+        const x = originX + ((S - Smin) / (Smax - Smin)) * (width - originX);
+        const payoffPut = Math.max(strikePut - S, 0) - premiumPut;
+        const y = originY - ((payoffPut - payoffMin) / (payoffMax - payoffMin)) * (originY - 50);
+        if (S === Smin) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    function initializeCharts() {
+      drawPayoff(document.getElementById("example1Canvas"), 100, 80, 10, 5, 110);
+      drawPayoff(document.getElementById("example2Canvas"), 40, 25, 5, 2, 50);
+      drawPayoff(document.getElementById("example3Canvas"), 200, 160, 20, 15, 220);
+    }
+
+    function updateChart(example) {
+      const strikeCall = parseFloat(document.getElementById(`strikeCall${example}`).value);
+      const strikePut = parseFloat(document.getElementById(`strikePut${example}`).value);
+      const premiumCall = parseFloat(document.getElementById(`premiumCall${example}`).value);
+      const premiumPut = parseFloat(document.getElementById(`premiumPut${example}`).value);
+      const currentPrice = parseFloat(document.getElementById(`currentPrice${example}`).value);
+
+      drawPayoff(
+        document.getElementById(`example${example}Canvas`),
+        strikeCall,
+        strikePut,
+        premiumCall,
+        premiumPut,
+        currentPrice
+      );
+    }
+
+    window.onload = initializeCharts;
+  </script>
+</body>
+</html>
